@@ -1,4 +1,5 @@
 ﻿using ECommmerce.Api.Data;
+using ECommmerce.Api.DTOs;
 using ECommmerce.Api.Model;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -28,7 +29,16 @@ namespace ECommmerce.Api.Controllers
         [HttpGet]
         public async Task<IActionResult> GetProducts() {
             var products = await _context.Products.ToListAsync();
-            return Ok(products);
+
+            var result = products.Select(p => new ProductDTO { 
+                Id = p.Id,
+                Name = p.Name,
+                Description = p.Description,
+                Price = p.Price,
+                Stock = p.Stock
+            });
+
+            return Ok(result);
         }
 
         [HttpGet("{id}")]
@@ -40,26 +50,52 @@ namespace ECommmerce.Api.Controllers
                 return NotFound();
             }
 
-            return Ok(product);
+            var result = new ProductDTO
+            {
+                Id = product.Id,
+                Name = product.Name,
+                Description = product.Description,
+                Price = product.Price,
+                Stock = product.Stock
+            };
+
+            return Ok(result);
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateProduct([FromBody]Product product) {
-            if (product == null) { 
+        public async Task<IActionResult> CreateProduct([FromBody]CreateProductDTO dto) {
+            if (dto == null) { 
                 return BadRequest();
             }
-        
-            product.Id = products.Max(p => p.Id) + 1;
+
+            var product = new Product
+            {
+                Name = dto.Name,
+                Description = dto.Description,
+                Price = dto.Price,
+                Stock = dto.Stock
+            };
+
+            //product.Id = products.Max(p => p.Id) + 1;
 
             _context.Products.Add(product);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetProductById), new { id = product.Id }, product);
+            var result = new ProductDTO
+            {
+                Id = product.Id,
+                Name = product.Name,
+                Description = product.Description,
+                Price = product.Price,
+                Stock = product.Stock
+            };
+
+            return CreatedAtAction(nameof(GetProductById), new { id = product.Id }, result);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateProduct(int id, [FromBody] Product updateProduct) {
-            if (updateProduct == null)
+        public async Task<IActionResult> UpdateProduct(int id, [FromBody] CreateProductDTO dto) {
+            if (dto == null)
             {
                 return BadRequest();
             }
@@ -70,25 +106,36 @@ namespace ECommmerce.Api.Controllers
                 return NotFound();
             }
 
-            existingProduct.Name = updateProduct.Name;
-            existingProduct.Description = updateProduct.Description;
-            existingProduct.Price = updateProduct.Price;
-            existingProduct.Stock = updateProduct.Stock;
+            existingProduct.Name = dto.Name;
+            existingProduct.Description = dto.Description;
+            existingProduct.Price = dto.Price;
+            existingProduct.Stock = dto.Stock;
 
             await _context.SaveChangesAsync();
-            return Ok(existingProduct);
+
+            var result = new ProductDTO
+            {
+                Id = existingProduct.Id,
+                Name = existingProduct.Name,
+                Description = existingProduct.Description,
+                Price = existingProduct.Price,
+                Stock = existingProduct.Stock
+            };
+
+            return Ok(result);
         }
 
         [HttpDelete("{id}")]
-        public IActionResult DeleteProduct(int id) { 
+        public async Task<IActionResult> DeleteProduct(int id) { 
         
-            var product = products.FirstOrDefault(x => x.Id == id);
+            var product = await _context.Products.FindAsync(id);
             if ( product == null )
             {
                 return NotFound();
             }
 
-            products.Remove(product);
+            _context.Products.Remove(product);
+            await _context.SaveChangesAsync();
 
             return NoContent();
         }
