@@ -1,6 +1,7 @@
 using ECommmerce.Api.Data;
 using ECommmerce.Api.DTOs;
 using ECommmerce.Api.Mappings;
+using ECommmerce.Api.Middleware;
 using ECommmerce.Api.Services;
 using ECommmerce.Api.Services.Interfaces;
 using FluentValidation;
@@ -26,7 +27,7 @@ builder.Services.AddAutoMapper(typeof(ProductProfile));
 builder.Services.AddScoped<IProductService, ProductService>();
 
 var app = builder.Build();
-
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
