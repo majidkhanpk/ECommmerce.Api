@@ -1,4 +1,5 @@
-﻿using ECommmerce.Api.Data;
+﻿using AutoMapper;
+using ECommmerce.Api.Data;
 using ECommmerce.Api.DTOs;
 using ECommmerce.Api.Model;
 using Microsoft.AspNetCore.Http;
@@ -12,32 +13,18 @@ namespace ECommmerce.Api.Controllers
     public class ProductsController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly IMapper _mapper;
 
-        public ProductsController(AppDbContext context)
+        public ProductsController(AppDbContext context, IMapper mapper)
         {
             _context = context;
+            _mapper = mapper;
         }
-
-        private readonly List<Product> products = new List<Product>
-        {
-            new Product { Id = 1, Name = "Laptop", Description = "A high-performance laptop", Price = 1200.00m, Stock = 10 },
-            new Product { Id = 2, Name = "Keyboard", Description = "Mechanical keyboard with RGB lighting", Price = 150.00m, Stock = 50 },
-            new Product { Id = 3, Name = "Headphone", Description = "Noise-cancelling over-ear headphones", Price = 180.00m, Stock = 30 },
-            new Product { Id = 4, Name = "Mouse", Description = "Wireless ergonomic mouse", Price = 20.00m, Stock = 100 }
-        };
 
         [HttpGet]
         public async Task<IActionResult> GetProducts() {
             var products = await _context.Products.ToListAsync();
-
-            var result = products.Select(p => new ProductDTO { 
-                Id = p.Id,
-                Name = p.Name,
-                Description = p.Description,
-                Price = p.Price,
-                Stock = p.Stock
-            });
-
+            var result = _mapper.Map<IEnumerable<ProductDTO>>(products);
             return Ok(result);
         }
 
@@ -50,15 +37,7 @@ namespace ECommmerce.Api.Controllers
                 return NotFound();
             }
 
-            var result = new ProductDTO
-            {
-                Id = product.Id,
-                Name = product.Name,
-                Description = product.Description,
-                Price = product.Price,
-                Stock = product.Stock
-            };
-
+            var result = _mapper.Map<ProductDTO>(product);
             return Ok(result);
         }
 
@@ -68,28 +47,11 @@ namespace ECommmerce.Api.Controllers
                 return BadRequest();
             }
 
-            var product = new Product
-            {
-                Name = dto.Name,
-                Description = dto.Description,
-                Price = dto.Price,
-                Stock = dto.Stock
-            };
-
-            //product.Id = products.Max(p => p.Id) + 1;
-
+            var product = _mapper.Map<Product>(dto);
             _context.Products.Add(product);
             await _context.SaveChangesAsync();
 
-            var result = new ProductDTO
-            {
-                Id = product.Id,
-                Name = product.Name,
-                Description = product.Description,
-                Price = product.Price,
-                Stock = product.Stock
-            };
-
+            var result = _mapper.Map<ProductDTO>(product);
             return CreatedAtAction(nameof(GetProductById), new { id = product.Id }, result);
         }
 
@@ -100,27 +62,16 @@ namespace ECommmerce.Api.Controllers
                 return BadRequest();
             }
 
-            var existingProduct = await _context.Products.FindAsync(id);
-            if ( existingProduct == null )
+            var product = await _context.Products.FindAsync(id);
+            if (product == null )
             {
                 return NotFound();
             }
-
-            existingProduct.Name = dto.Name;
-            existingProduct.Description = dto.Description;
-            existingProduct.Price = dto.Price;
-            existingProduct.Stock = dto.Stock;
+            _mapper.Map(dto, product);
 
             await _context.SaveChangesAsync();
 
-            var result = new ProductDTO
-            {
-                Id = existingProduct.Id,
-                Name = existingProduct.Name,
-                Description = existingProduct.Description,
-                Price = existingProduct.Price,
-                Stock = existingProduct.Stock
-            };
+            var result = _mapper.Map<ProductDTO>(product);
 
             return Ok(result);
         }
