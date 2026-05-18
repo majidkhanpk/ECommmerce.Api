@@ -1,6 +1,8 @@
 using ECommmerce.Api.Data;
 using ECommmerce.Api.DTOs;
 using ECommmerce.Api.Mappings;
+using ECommmerce.Api.Services;
+using ECommmerce.Api.Services.Interfaces;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.EntityFrameworkCore;
@@ -21,6 +23,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<CreateProductDTOValidator>();
 builder.Services.AddAutoMapper(typeof(ProductProfile));
+builder.Services.AddScoped<IProductService, ProductService>();
 
 var app = builder.Build();
 

@@ -2,6 +2,7 @@
 using ECommmerce.Api.Data;
 using ECommmerce.Api.DTOs;
 using ECommmerce.Api.Model;
+using ECommmerce.Api.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -12,33 +13,29 @@ namespace ECommmerce.Api.Controllers
     [ApiController]
     public class ProductsController : ControllerBase
     {
-        private readonly AppDbContext _context;
-        private readonly IMapper _mapper;
+        private readonly IProductService _productService;
 
-        public ProductsController(AppDbContext context, IMapper mapper)
+        public ProductsController(IProductService productService)
         {
-            _context = context;
-            _mapper = mapper;
+            _productService = productService;
         }
 
         [HttpGet]
         public async Task<IActionResult> GetProducts() {
-            var products = await _context.Products.ToListAsync();
-            var result = _mapper.Map<IEnumerable<ProductDTO>>(products);
-            return Ok(result);
+            var products = await _productService.GetAllProductsAsync();
+            return Ok(products);
         }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetProductById(int id)
         {
-            var product = await _context.Products.FindAsync(id);
+            var product = await _productService.GetProductByIdAsync(id);
             if (product == null)
             {
                 return NotFound();
             }
 
-            var result = _mapper.Map<ProductDTO>(product);
-            return Ok(result);
+            return Ok(product);
         }
 
         [HttpPost]
@@ -47,13 +44,10 @@ namespace ECommmerce.Api.Controllers
                 return BadRequest();
             }
 
-            var product = _mapper.Map<Product>(dto);
-            _context.Products.Add(product);
-            await _context.SaveChangesAsync();
-
-            var result = _mapper.Map<ProductDTO>(product);
-            return CreatedAtAction(nameof(GetProductById), new { id = product.Id }, result);
+            var product = await _productService.CreateProductAsync(dto);
+            return CreatedAtAction(nameof(GetProductById), new { id = product.Id }, product);
         }
+
 
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateProduct(int id, [FromBody] CreateProductDTO dto) {
@@ -62,31 +56,23 @@ namespace ECommmerce.Api.Controllers
                 return BadRequest();
             }
 
-            var product = await _context.Products.FindAsync(id);
-            if (product == null )
+            var product = await _productService.GetProductByIdAsync(id);
+            if (product == null)
             {
                 return NotFound();
             }
-            _mapper.Map(dto, product);
-
-            await _context.SaveChangesAsync();
-
-            var result = _mapper.Map<ProductDTO>(product);
-
-            return Ok(result);
+                
+            return Ok(product);
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteProduct(int id) { 
         
-            var product = await _context.Products.FindAsync(id);
-            if ( product == null )
+            var product = await _productService.DeleteProductAsync(id);
+            if ( !product)
             {
                 return NotFound();
             }
-
-            _context.Products.Remove(product);
-            await _context.SaveChangesAsync();
 
             return NoContent();
         }
