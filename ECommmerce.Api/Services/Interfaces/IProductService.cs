@@ -4,7 +4,7 @@ namespace ECommmerce.Api.Services.Interfaces
 {
     public interface IProductService
     {
-        Task<IEnumerable<ProductDTO>> GetAllProductsAsync();
+        Task<(IEnumerable<ProductDTO> Data, int TotalCount)> GetAllProductsAsync(ProductQueryParameters query);
 
         Task<ProductDTO?> GetProductByIdAsync(int id);
 

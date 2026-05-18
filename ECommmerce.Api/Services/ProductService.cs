@@ -17,10 +17,38 @@ namespace ECommmerce.Api.Services
             _mapper = mapper;
         }
 
-        public async Task<IEnumerable<ProductDTO>> GetAllProductsAsync()
+        public async Task<(IEnumerable<ProductDTO> Data, int TotalCount)> GetAllProductsAsync(ProductQueryParameters query)
         {
-            var products = await _context.Products.ToListAsync();
-            return _mapper.Map<IEnumerable<ProductDTO>>(products);
+            var productQuery = _context.Products.AsQueryable();
+            if (!string.IsNullOrWhiteSpace(query.Search)) { 
+                productQuery = productQuery.Where(p => p.Name.Contains(query.Search));
+            }
+
+            if (query.MinPrice.HasValue) {
+                productQuery = productQuery.Where(p => p.Price >= query.MinPrice.Value);
+            }
+
+            if (query.MaxPrice.HasValue)
+            {
+                productQuery = productQuery.Where(p => p.Price <= query.MaxPrice.Value);
+            }
+
+            var totalCount = await productQuery.CountAsync();
+
+            productQuery = query.SortBy?.ToLower() switch
+            {
+                "name" => query.descending == true ? productQuery.OrderByDescending(p => p.Name) : productQuery.OrderBy(p => p.Name),
+                "price" => query.descending == true ? productQuery.OrderByDescending(p => p.Price) : productQuery.OrderBy(p => p.Price),
+                _ => productQuery.OrderBy(p => p.Id)
+            };
+
+            var products = await productQuery
+                .Skip((query.Page - 1) * query.PageSize)
+                .Take(query.PageSize)
+                .ToListAsync();
+
+           var data = _mapper.Map<IEnumerable<ProductDTO>>(products);
+            return (data, totalCount);
         }
 
         public async Task<ProductDTO?> GetProductByIdAsync(int id)

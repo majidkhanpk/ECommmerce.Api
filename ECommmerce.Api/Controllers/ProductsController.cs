@@ -21,9 +21,16 @@ namespace ECommmerce.Api.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetProducts() {
-            var products = await _productService.GetAllProductsAsync();
-            return Ok(products);
+        public async Task<IActionResult> GetProducts([FromQuery] ProductQueryParameters query) {
+            var (data ,totalcount) = await _productService.GetAllProductsAsync(query);
+            var response = new
+            {
+                data,
+                totalcount,
+                query.Page,
+                query.PageSize
+            };
+            return Ok(response);
         }
 
         [HttpGet("{id}")]
